@@ -28,6 +28,9 @@ let stars = [];
 let items = [];
 let boss = null;
 let damageEffects = [];
+let bossCountdown = 0;
+let bossShoutText = '';
+let bossShoutTimer = 0;
 
 const itemImage = new Image();
 itemImage.src = 'sample_images/item_regit.webp';
@@ -37,6 +40,9 @@ bossImage1.src = 'sample_images/kinnnikun1.png';
 
 const bossImage2 = new Image();
 bossImage2.src = 'sample_images/kinnnikun2.png';
+
+const candyImage = new Image();
+candyImage.src = 'sample_images/candy.png';
 
 const powerSound = new Audio('sample_sound/power.mp3');
 
@@ -292,9 +298,14 @@ function spawnBoss() {
             damageFlash: 0,
             isDamaged: false,
             attackPattern: 0,
-            burstTimer: 0
+            burstTimer: 0,
+            aliveTime: 0,
+            specialAttackCooldown: 0
         };
         gameState.lastBossScore = Math.floor(gameState.score / 2000) * 2000;
+        bossCountdown = 0;
+        bossShoutText = '';
+        bossShoutTimer = 0;
     }
 }
 
@@ -332,11 +343,48 @@ function updateBoss() {
     }
 
     boss.shootTimer++;
+    boss.aliveTime++;
+    
+    // カウントダウンとシャウトの更新
+    if (bossCountdown > 0) {
+        bossCountdown--;
+        if (bossCountdown === 0) {
+            bossShoutText = 'ヤー！';
+            bossShoutTimer = 30;
+            // 一列攻撃を実行
+            for (let i = 0; i < 15; i++) {
+                boss.bullets.push({
+                    x: i * 40 + 20,
+                    y: boss.y + boss.height,
+                    speed: 6,
+                    angle: 0,
+                    type: 'special'
+                });
+            }
+            boss.specialAttackCooldown = 600; // 10秒間のクールダウン
+        }
+    }
+    
+    if (bossShoutTimer > 0) {
+        bossShoutTimer--;
+        if (bossShoutTimer === 0) {
+            bossShoutText = '';
+        }
+    }
 
-    // シンプルな攻撃パターン: 真下への単発弾（頻度を減らす）
-    if (boss.shootTimer % 80 === 0) {
+    // 特殊攻撃の発動条件（5秒生存後、10秒間隔）
+    if (boss.aliveTime > 300 && boss.specialAttackCooldown <= 0 && bossCountdown === 0) {
+        bossCountdown = 180; // 3秒カウントダウン
+    }
+    
+    if (boss.specialAttackCooldown > 0) {
+        boss.specialAttackCooldown--;
+    }
+
+    // 通常攻撃パターン（特殊攻撃中でない時のみ）
+    if (boss.shootTimer % 80 === 0 && bossCountdown === 0) {
         boss.bullets.push({
-            x: boss.x + boss.width / 2 - 3,
+            x: boss.x + boss.width / 2 - 15,
             y: boss.y + boss.height,
             speed: 4,
             angle: 0,
@@ -474,10 +522,11 @@ function checkCollisions() {
 
     if (boss) {
         boss.bullets.forEach(bullet => {
-            if (player.x < bullet.x + 6 &&
-                player.x + player.width > bullet.x &&
-                player.y < bullet.y + 10 &&
-                player.y + player.height > bullet.y) {
+            const bulletSize = 30; // candy画像のサイズ
+            if (player.x < bullet.x + bulletSize / 2 &&
+                player.x + player.width > bullet.x - bulletSize / 2 &&
+                player.y < bullet.y + bulletSize / 2 &&
+                player.y + player.height > bullet.y - bulletSize / 2) {
                 
                 gameState.isGameOver = true;
                 gameOverElement.style.display = 'block';
@@ -546,9 +595,36 @@ function gameLoop() {
     if (boss) {
         drawBoss(boss);
         boss.bullets.forEach(bullet => {
-            ctx.fillStyle = '#ff4444';
-            ctx.fillRect(bullet.x, bullet.y, 6, 10);
+            if (candyImage.complete) {
+                ctx.drawImage(candyImage, bullet.x - 15, bullet.y - 15, 30, 30);
+            } else {
+                ctx.fillStyle = '#ff4444';
+                ctx.fillRect(bullet.x, bullet.y, 6, 10);
+            }
         });
+        
+        // カウントダウン表示
+        if (bossCountdown > 0) {
+            const countNumber = Math.ceil(bossCountdown / 60);
+            ctx.fillStyle = '#ff0000';
+            ctx.font = 'bold 72px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(countNumber.toString(), canvas.width / 2, canvas.height / 2);
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 3;
+            ctx.strokeText(countNumber.toString(), canvas.width / 2, canvas.height / 2);
+        }
+        
+        // シャウト表示
+        if (bossShoutText) {
+            ctx.fillStyle = '#ffff00';
+            ctx.font = 'bold 48px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText(bossShoutText, canvas.width / 2, canvas.height / 3);
+            ctx.strokeStyle = '#ff0000';
+            ctx.lineWidth = 2;
+            ctx.strokeText(bossShoutText, canvas.width / 2, canvas.height / 3);
+        }
     }
 
     updateExplosions();
@@ -586,6 +662,9 @@ function resetGame() {
     items = [];
     boss = null;
     damageEffects = [];
+    bossCountdown = 0;
+    bossShoutText = '';
+    bossShoutTimer = 0;
     scoreElement.textContent = 'スコア: 0';
     gameOverElement.style.display = 'none';
     gameLoop();
