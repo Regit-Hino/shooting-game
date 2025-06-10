@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>縦シューティングゲーム</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        
+        #gameContainer {
+            text-align: center;
+        }
+        
+        canvas {
+            border: 2px solid #fff;
+        }
+        
+        #score {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        #gameOver {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 36px;
+            color: #ff0000;
+            display: none;
+        }
+        
+        #instructions {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="score">スコア: 0</div>
+        <canvas id="gameCanvas" width="600" height="800"></canvas>
+        <div id="gameOver">
+            <div>ゲームオーバー</div>
+            <div style="font-size: 18px; margin-top: 10px;">Rキーでリスタート</div>
+        </div>
+        <div id="instructions">
+            矢印キー: 移動 | スペースキー: 射撃 | Vキー: ギガンティックキャノン | Rキー: リスタート
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
